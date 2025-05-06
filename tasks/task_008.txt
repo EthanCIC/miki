@@ -1,0 +1,143 @@
+# Task ID: 8
+# Title: Implement Task Management via Chat
+# Status: pending
+# Dependencies: 7
+# Priority: medium
+# Description: Create functionality to list, mark/unmark as done, and delete tasks via chat as specified in US-2, US-3, and US-4.
+# Details:
+1. Extend LangGraph with nodes for task management actions:
+```python
+def determine_action(state):
+    user_message = state["messages"][-1]["content"]
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    
+    response = llm.invoke([
+        {"role": "system", "content": "Determine user intent for task management."},
+        {"role": "user", "content": user_message}
+    ], functions=[
+        {
+            "name": "task_action",
+            "description": "Determine task management action",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["list", "complete", "uncomplete", "delete", "create", "prioritize"]},
+                    "task_reference": {"type": "string", "description": "Reference to the task (title or description)"},
+                    "filters": {"type": "object", "description": "Filters for listing tasks"}
+                },
+                "required": ["action"]
+            }
+        }
+    ])
+    
+    if response.function_call:
+        action_data = json.loads(response.function_call.arguments)
+        state["action_data"] = action_data
+        state["action"] = action_data["action"]
+    else:
+        state["action"] = "unknown"
+    
+    return state
+```
+
+2. Implement task listing functionality:
+```python
+def list_tasks(state):
+    # Get filters from action_data if available
+    filters = state.get("action_data", {}).get("filters", {})
+    
+    # Query tasks based on filters
+    tasks = get_filtered_tasks(filters)
+    
+    # Format task list for display
+    task_list = "\n".join([f"- {task['title']} ({task['status']})" for task in tasks])
+    
+    state["response"] = f"Here are your tasks:\n{task_list}"
+    return state
+```
+
+3. Implement task completion toggle:
+```python
+def toggle_task_completion(state):
+    task_reference = state["action_data"].get("task_reference")
+    if not task_reference:
+        state["action"] = "clarify"
+        state["response"] = "Which task would you like to mark as complete?"
+        return state
+    
+    # Find task by reference
+    task = find_task_by_reference(task_reference)
+    if not task:
+        state["response"] = f"I couldn't find a task matching '{task_reference}'"
+        return state
+    
+    # Toggle completion status
+    new_status = "completed" if task["status"] == "open" else "open"
+    update_task_status(task["id"], new_status)
+    
+    state["response"] = f"Marked '{task['title']}' as {new_status}"
+    return state
+```
+
+4. Implement task deletion:
+```python
+def delete_task(state):
+    task_reference = state["action_data"].get("task_reference")
+    if not task_reference:
+        state["action"] = "clarify"
+        state["response"] = "Which task would you like to delete?"
+        return state
+    
+    # Find task by reference
+    task = find_task_by_reference(task_reference)
+    if not task:
+        state["response"] = f"I couldn't find a task matching '{task_reference}'"
+        return state
+    
+    # Delete task
+    remove_task(task["id"])
+    
+    state["response"] = f"Deleted task: {task['title']}"
+    return state
+```
+
+5. Connect these actions to the LangGraph pipeline
+
+# Test Strategy:
+1. Unit tests for each task management action
+2. Test task reference resolution with various phrasings
+3. Integration tests for complete management flow
+4. UI E2E test for marking task as done (F-13b)
+5. Test with ambiguous references that require clarification
+
+# Subtasks:
+## 1. Implement LangGraph Action Determination Node [pending]
+### Dependencies: None
+### Description: Create a LangGraph node that analyzes user input to determine the intended task management action (create, list, toggle, delete).
+### Details:
+Develop a classification system using LLM to parse user intent from natural language. The node should output a structured action type with relevant parameters extracted from the input. Include handling for ambiguous requests by implementing clarification logic.
+
+## 2. Develop Task Listing Functionality [pending]
+### Dependencies: 8.1
+### Description: Implement the ability to display all tasks or filtered subsets based on user queries.
+### Details:
+Create a component that retrieves tasks from storage, formats them for display, and handles various listing requests (all tasks, completed tasks, tasks by priority, etc.). Implement natural language parsing to understand filtering criteria specified by users.
+
+## 3. Implement Task Completion Toggle [pending]
+### Dependencies: 8.1, 8.2
+### Description: Create functionality to mark tasks as complete or incomplete based on user commands.
+### Details:
+Develop a system to identify which task(s) the user wants to toggle based on natural language references (by ID, name, or description). Implement the state change logic and confirmation messaging. Handle edge cases like toggling multiple tasks or non-existent tasks.
+
+## 4. Implement Task Deletion Functionality [pending]
+### Dependencies: 8.1, 8.2
+### Description: Add the ability to remove tasks from the system via chat commands.
+### Details:
+Create a deletion mechanism that can identify tasks through various reference methods (ID, partial name matching, etc.). Implement confirmation flows to prevent accidental deletions. Ensure proper cleanup of dependencies and related data when tasks are removed.
+
+## 5. Integrate Components into LangGraph Pipeline [pending]
+### Dependencies: 8.1, 8.2, 8.3, 8.4
+### Description: Connect all task management functionalities into a cohesive LangGraph workflow.
+### Details:
+Design the overall graph structure connecting the action determination node with the appropriate execution paths. Implement state management to maintain context across interactions. Add error handling and fallback paths for unexpected inputs. Test the integrated system with various user interaction patterns.
+

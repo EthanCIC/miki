@@ -1,0 +1,117 @@
+# Task ID: 9
+# Title: Implement Notification System
+# Status: pending
+# Dependencies: 2, 6
+# Priority: medium
+# Description: Create the notification system to deliver reminders 60 minutes before deadline, at due time, and 9:00 AM daily digest of overdue tasks as specified in F-8 and US-6.
+# Details:
+1. Create NotificationService in Flutter:
+```dart
+class NotificationService {
+  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final IsarService _isarService;
+  
+  NotificationService(this._isarService);
+  
+  Future<void> initialize() async {
+    // Initialize notifications
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+    const InitializationSettings initSettings = InitializationSettings(android: androidSettings, iOS: iosSettings);
+    
+    await _notifications.initialize(initSettings);
+    
+    // Request permissions
+    await _requestPermissions();
+  }
+  
+  Future<void> _requestPermissions() async {
+    // Request notification permissions
+  }
+  
+  Future<void> scheduleTaskNotifications(Task task) async {
+    if (task.deadline == null) return;
+    
+    // Schedule 60 min before deadline
+    final sixtyMinBefore = task.deadline!.subtract(Duration(minutes: 60));
+    if (sixtyMinBefore.isAfter(DateTime.now())) {
+      await _scheduleNotification(
+        id: int.parse(task.id.substring(0, 8), radix: 16) * 3,
+        title: 'Upcoming Task',
+        body: '${task.title} is due in 60 minutes',
+        scheduledDate: sixtyMinBefore,
+      );
+    }
+    
+    // Schedule at deadline
+    await _scheduleNotification(
+      id: int.parse(task.id.substring(0, 8), radix: 16) * 3 + 1,
+      title: 'Task Due Now',
+      body: '${task.title} is due now',
+      scheduledDate: task.deadline!,
+    );
+    
+    // Prune notifications if more than 60 scheduled
+    await _pruneNotifications();
+  }
+  
+  Future<void> scheduleDailyDigest() async {
+    // Schedule daily digest at 9:00 AM
+    final now = DateTime.now();
+    var scheduledDate = DateTime(now.year, now.month, now.day, 9, 0);
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(Duration(days: 1));
+    }
+    
+    await _scheduleNotification(
+      id: 0, // Fixed ID for daily digest
+      title: 'Daily Task Digest',
+      body: 'You have overdue tasks',
+      scheduledDate: scheduledDate,
+      payload: 'daily_digest',
+    );
+  }
+  
+  Future<void> _pruneNotifications() async {
+    // Logic to ensure no more than 60 notifications are scheduled
+  }
+}
+```
+
+2. Implement notification scheduling when tasks are created or updated
+3. Create daily digest generation logic
+4. Handle notification taps to open relevant app screens
+5. Implement notification permission flow with user guidance
+
+# Test Strategy:
+1. Unit tests for notification scheduling logic
+2. Test notification pruning when exceeding 60 scheduled notifications
+3. Test daily digest generation with various overdue task scenarios
+4. Manual device testing for notification delivery
+5. Test permission handling flow
+
+# Subtasks:
+## 1. Flutter Notification Service Setup [pending]
+### Dependencies: None
+### Description: Implement the core notification service infrastructure in Flutter
+### Details:
+Create a notification service class that wraps platform-specific notification APIs. Integrate the flutter_local_notifications package. Implement methods for creating, displaying, and canceling notifications. Set up notification channels for Android and notification categories for iOS. Create a unified interface that works across platforms.
+
+## 2. Task Deadline Notification Scheduling [pending]
+### Dependencies: 9.1
+### Description: Implement functionality to schedule notifications for upcoming task deadlines
+### Details:
+Create a scheduling system that monitors task deadlines. Implement logic to determine appropriate notification timing (e.g., 1 day before, 1 hour before). Ensure notifications persist through app restarts. Handle timezone changes and device reboots. Create methods to update or cancel notifications when tasks are modified or completed.
+
+## 3. Daily Digest Implementation [pending]
+### Dependencies: 9.1
+### Description: Create a system for sending daily summaries of pending tasks
+### Details:
+Implement a daily digest notification feature that summarizes pending tasks. Create logic to determine the optimal time to send the digest. Design an expandable notification format that can show multiple tasks. Implement the ability for users to configure digest timing and content preferences. Ensure the digest is generated with the most up-to-date task information.
+
+## 4. Notification Permission and Interaction Handling [pending]
+### Dependencies: 9.1, 9.2, 9.3
+### Description: Implement permission requests and handle user interactions with notifications
+### Details:
+Create a permission request flow for notifications on first app launch. Implement graceful fallbacks when permissions are denied. Add handlers for notification taps to navigate to relevant app screens. Track notification engagement metrics. Implement settings to allow users to customize notification preferences. Handle deep linking from notifications to specific tasks or views.
+

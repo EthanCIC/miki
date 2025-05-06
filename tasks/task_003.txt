@@ -1,0 +1,88 @@
+# Task ID: 3
+# Title: Setup FastAPI Backend with LangGraph
+# Status: pending
+# Dependencies: None
+# Priority: high
+# Description: Create the Python backend using FastAPI and LangGraph for orchestrating GPT-4o via function calling as specified in F-1.
+# Details:
+1. Setup Python 3.12 project with FastAPI:
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install fastapi uvicorn langgraph langchain-openai python-dotenv redis psycopg2-binary
+```
+
+2. Create basic FastAPI app structure:
+```python
+from fastapi import FastAPI, WebSocket, Depends, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from langchain_openai import ChatOpenAI
+from langgraph.graph import StateGraph
+
+app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Restrict in production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Health check endpoint
+@app.get("/health")
+async def health_check():
+    return {"status": "ok"}
+```
+
+3. Implement LangGraph pipeline with nodes for Parse → Disambiguate → CRUD → Suggest → Respond
+4. Setup function calling with GPT-4o to extract task properties
+5. Configure Redis for caching and rate limiting
+6. Implement retry logic with exponential backoff
+7. Setup model fallback to GPT-3.5 when needed
+
+# Test Strategy:
+1. Unit tests for each LangGraph node using mock responses
+2. Integration tests for the complete pipeline
+3. Test error handling and retry mechanisms
+4. Load testing for API endpoints
+5. Test fallback mechanisms when primary model is unavailable
+
+# Subtasks:
+## 1. Initial FastAPI Project Setup [pending]
+### Dependencies: None
+### Description: Set up the basic FastAPI project structure with necessary dependencies and configuration
+### Details:
+Create a new FastAPI project with proper directory structure. Install required packages (fastapi, uvicorn, pydantic, etc.). Configure environment variables and settings. Set up basic API endpoints and test the server. Create documentation using FastAPI's built-in Swagger UI.
+
+## 2. LangGraph Pipeline Implementation [pending]
+### Dependencies: 3.1
+### Description: Implement the LangGraph orchestration pipeline for managing LLM workflows
+### Details:
+Install LangGraph and related dependencies. Design the graph structure for the LLM processing pipeline. Implement nodes for different processing stages. Create connections between nodes to establish the workflow. Add state management for the pipeline. Test the basic pipeline functionality with sample inputs.
+
+## 3. GPT-4o Function Calling Integration [pending]
+### Dependencies: 3.2
+### Description: Integrate GPT-4o with function calling capabilities into the LangGraph pipeline
+### Details:
+Set up OpenAI API client with proper authentication. Define function schemas for GPT-4o to call. Implement the function calling logic within the LangGraph pipeline. Create handlers for processing GPT-4o responses. Add proper parsing and validation of function call results. Test the integration with various function calling scenarios.
+
+## 4. Redis Caching Implementation [pending]
+### Dependencies: 3.3
+### Description: Implement Redis caching to optimize performance and reduce API calls
+### Details:
+Set up Redis connection and configuration. Design caching strategy for LLM responses. Implement cache key generation based on input parameters. Add cache hit/miss logic in the request flow. Set appropriate TTL (Time To Live) for cached items. Create utilities for cache invalidation when needed. Test caching performance and correctness.
+
+## 5. Error Handling and Retry Logic [pending]
+### Dependencies: 3.3, 3.4
+### Description: Implement robust error handling and retry mechanisms for API calls and LLM requests
+### Details:
+Design error classification system for different failure types. Implement exponential backoff retry logic for transient errors. Create custom exception classes for different error scenarios. Add logging for errors with appropriate detail levels. Implement circuit breaker pattern for persistent failures. Create user-friendly error responses. Test error handling with simulated failure scenarios.
+
+## 6. Model Fallback Mechanism [pending]
+### Dependencies: 3.5
+### Description: Implement a fallback mechanism to use alternative models when primary model fails
+### Details:
+Define hierarchy of models for fallback (e.g., GPT-4o → GPT-4 → GPT-3.5). Implement detection logic for when to trigger fallbacks. Create adapters for different model interfaces if needed. Add configuration for fallback policies. Implement metrics collection for fallback occurrences. Test fallback scenarios with various failure conditions. Document the fallback behavior for API users.
+

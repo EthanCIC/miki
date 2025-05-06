@@ -1,0 +1,113 @@
+# Task ID: 4
+# Title: Implement WebSocket Communication
+# Status: pending
+# Dependencies: 1, 3
+# Priority: high
+# Description: Create WebSocket client in Flutter and server in FastAPI for real-time chat communication between frontend and backend.
+# Details:
+1. Implement WebSocket endpoint in FastAPI:
+```python
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    try:
+        while True:
+            data = await websocket.receive_text()
+            # Process the message through LangGraph
+            response = await process_message(data)
+            await websocket.send_text(response)
+    except WebSocketDisconnect:
+        print("Client disconnected")
+```
+
+2. Create WebSocket client in Flutter:
+```dart
+class ChatService {
+  final WebSocketChannel _channel;
+  final StreamController<ChatMessage> _messagesController = StreamController<ChatMessage>.broadcast();
+  
+  Stream<ChatMessage> get messages => _messagesController.stream;
+  
+  ChatService(String url) : _channel = WebSocketChannel.connect(Uri.parse(url)) {
+    _channel.stream.listen(_handleMessage, onError: _handleError, onDone: _handleDone);
+  }
+  
+  void sendMessage(String text) {
+    final message = ChatMessage(text: text, isUser: true);
+    _messagesController.add(message);
+    _channel.sink.add(jsonEncode({'message': text}));
+  }
+  
+  void _handleMessage(dynamic data) {
+    final response = jsonDecode(data as String);
+    final message = ChatMessage.fromJson(response);
+    _messagesController.add(message);
+  }
+  
+  // Error handling and reconnection logic
+  void _handleError(error) {...}
+  void _handleDone() {...}
+  
+  void dispose() {
+    _channel.sink.close();
+    _messagesController.close();
+  }
+}
+```
+
+3. Implement offline queue for messages when disconnected
+4. Add reconnection logic with exponential backoff
+5. Implement message serialization/deserialization
+
+# Test Strategy:
+1. Unit tests for WebSocket client in Flutter
+2. Unit tests for WebSocket server in FastAPI
+3. Integration test for round-trip message flow
+4. Test offline queue and reconnection scenarios
+5. Test with various network conditions (slow, intermittent)
+
+# Subtasks:
+## 1. Implement FastAPI WebSocket Server [pending]
+### Dependencies: None
+### Description: Create a WebSocket endpoint in the FastAPI backend to handle real-time connections
+### Details:
+1. Create a WebSocket endpoint route in FastAPI
+2. Implement connection handling (accept, disconnect)
+3. Add authentication middleware for WebSocket connections
+4. Implement broadcast mechanism for sending messages to multiple clients
+5. Add error handling and logging for WebSocket connections
+6. Create connection manager class to track active connections
+
+## 2. Implement Flutter WebSocket Client [pending]
+### Dependencies: None
+### Description: Develop the client-side WebSocket implementation in the Flutter application
+### Details:
+1. Create a WebSocket service class in Flutter
+2. Implement connection establishment with authentication
+3. Add message listeners and callback handlers
+4. Create a stream-based interface for components to subscribe to messages
+5. Implement proper connection state management
+6. Add error handling for connection issues
+
+## 3. Implement Offline Queue and Reconnection Logic [pending]
+### Dependencies: 4.1, 4.2
+### Description: Add functionality to handle offline scenarios and automatic reconnection
+### Details:
+1. Create a persistent queue for storing messages when offline
+2. Implement exponential backoff for reconnection attempts
+3. Add logic to detect network status changes
+4. Implement message replay when connection is restored
+5. Add conflict resolution for messages sent during offline periods
+6. Create a background service for maintaining reconnection attempts
+
+## 4. Implement Message Serialization/Deserialization [pending]
+### Dependencies: 4.1, 4.2
+### Description: Create a consistent message format and handling between client and server
+### Details:
+1. Define a standard message format (JSON schema)
+2. Implement serialization/deserialization on server side
+3. Implement serialization/deserialization on client side
+4. Add message validation
+5. Implement message compression for large payloads
+6. Create type-safe message handlers for different message types
+

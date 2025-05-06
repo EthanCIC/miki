@@ -1,0 +1,123 @@
+# Task ID: 7
+# Title: Implement Task Creation via Chat
+# Status: pending
+# Dependencies: 3, 4, 5
+# Priority: high
+# Description: Create the functionality to parse natural language input and create tasks via chat using LangGraph and function calling as specified in F-1 and US-1.
+# Details:
+1. Implement LangGraph node for parsing task information:
+```python
+def parse_task(state):
+    user_message = state["messages"][-1]["content"]
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    
+    response = llm.invoke([
+        {"role": "system", "content": "Extract task information from user messages. Support mixed Chinese and English."},
+        {"role": "user", "content": user_message}
+    ], functions=[
+        {
+            "name": "extract_task",
+            "description": "Extract task details from user message",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "title": {"type": "string", "description": "Task title"},
+                    "deadline": {"type": "string", "format": "date-time", "description": "Task deadline (optional)"},
+                    "category": {"type": "string", "description": "Task category (optional, default: general)"},
+                    "priority": {"type": "string", "enum": ["low", "medium", "high"], "description": "Task priority (optional, default: medium)"}
+                },
+                "required": ["title"]
+            }
+        }
+    ])
+    
+    # Extract function call results
+    if response.function_call:
+        task_data = json.loads(response.function_call.arguments)
+        state["task_data"] = task_data
+        state["action"] = "create_task"
+    else:
+        state["action"] = "clarify"
+    
+    return state
+```
+
+2. Implement task creation endpoint in FastAPI:
+```python
+@app.post("/tasks")
+async def create_task(task: TaskCreate):
+    # Create task in database
+    task_id = str(uuid.uuid4())
+    new_task = {
+        "id": task_id,
+        "title": task.title,
+        "deadline": task.deadline,
+        "category": task.category or "general",
+        "priority": task.priority or "medium",
+        "status": "open",
+        "created_at": datetime.now().isoformat()
+    }
+    # Store in database
+    return {"id": task_id, **new_task}
+```
+
+3. Connect WebSocket message handling to task creation:
+```python
+async def process_message(message: str):
+    # Initialize LangGraph state
+    state = {"messages": [{"role": "user", "content": message}]}
+    
+    # Run through LangGraph pipeline
+    result = await graph.invoke(state)
+    
+    if result["action"] == "create_task":
+        # Create task
+        task = await create_task_from_data(result["task_data"])
+        return json.dumps({
+            "message": f"Created task: {task['title']}",
+            "task": task
+        })
+    elif result["action"] == "clarify":
+        return json.dumps({"message": result["response"]})
+```
+
+4. Implement client-side task creation from WebSocket response
+
+# Test Strategy:
+1. Unit tests for task parsing with various input formats
+2. Test multilingual support (Chinese/English mixed inputs)
+3. Integration test for end-to-end task creation flow
+4. UI E2E test for creating task via chat (F-13a)
+5. Test edge cases (ambiguous inputs, missing information)
+
+# Subtasks:
+## 1. Implement LangGraph Node for Task Information Parsing [pending]
+### Dependencies: None
+### Description: Create a LangGraph node that processes user chat messages to extract potential task information using LLM capabilities.
+### Details:
+Design and implement a LangGraph node that takes user messages as input and analyzes them for task-related content. The node should identify when a user is implicitly or explicitly describing a task and extract relevant information such as title, description, and potential deadlines. Include proper error handling for ambiguous inputs and implement a confidence scoring mechanism to determine if task extraction should proceed.
+
+## 2. Develop Function Calling Implementation for Task Extraction [pending]
+### Dependencies: 7.1
+### Description: Create a structured function calling schema and implementation to extract task details from natural language.
+### Details:
+Define a JSON schema for task extraction function calling that includes fields for task title, description, priority, deadline, and other relevant metadata. Implement the function calling logic that interfaces with the LLM to extract structured task data from user messages. Include validation logic to ensure extracted task data meets minimum requirements before proceeding to task creation.
+
+## 3. Create FastAPI Endpoint for Task Creation [pending]
+### Dependencies: 7.2
+### Description: Implement a FastAPI endpoint that receives extracted task information and creates a new task in the database.
+### Details:
+Design and implement a '/tasks' POST endpoint that accepts the structured task data from the function calling implementation. The endpoint should validate the incoming data, create a new task record in the database, and return appropriate success/error responses. Include proper error handling for database operations and implement transaction management to ensure data integrity.
+
+## 4. Implement WebSocket Message Handling Integration [pending]
+### Dependencies: 7.3
+### Description: Integrate the task creation flow with the existing WebSocket communication system.
+### Details:
+Extend the WebSocket message handler to support task creation events. Implement logic to send task creation confirmation messages back to the client through the WebSocket connection. Add support for real-time updates to all connected clients when a new task is created. Ensure proper error handling and message formatting for WebSocket communications.
+
+## 5. Develop Client-Side Task Creation from Responses [pending]
+### Dependencies: 7.4
+### Description: Implement client-side logic to handle task creation responses and update the UI accordingly.
+### Details:
+Create React components and state management logic to handle task creation responses from the WebSocket connection. Implement UI feedback for successful task creation, including animations and notifications. Add error handling for failed task creation attempts and provide user feedback. Update the task list view to include newly created tasks without requiring a page refresh.
+

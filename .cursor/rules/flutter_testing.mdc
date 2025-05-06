@@ -1,0 +1,216 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Flutter 測試規範
+
+本文檔描述了專案中 Flutter 測試的組織方式、規範和最佳實踐。
+
+## 測試類型與目錄結構
+
+測試文件按照類型組織到不同的目錄中：
+
+```
+test/
+├── unit/               # 單元測試，測試單個函數或類
+│   ├── models/         # 數據模型測試
+│   └── utils/          # 工具函數測試
+├── widget/             # 小部件測試，測試 UI 元件
+├── integration/        # 整合測試，測試整個應用流程
+└── widget_test.dart    # 默認測試文件，測試應用渲染
+```
+
+## 單元測試 (Unit Tests)
+
+- **目的**：測試單個函數、方法或類的功能
+- **命名規範**：`<被測試類>_test.dart` (如 `todo_test.dart`)
+- **執行命令**：`flutter test test/unit/`
+
+### 單元測試範例
+
+```dart
+import 'package:flutter_test/flutter_test.dart';
+import 'package:chat_first_todo/data/models/todo.dart';
+
+void main() {
+  group('Todo Model', () {
+    test('should create with correct defaults', () {
+      final todo = Todo(title: '測試');
+      expect(todo.title, '測試');
+      expect(todo.status, TodoStatus.pending);
+    });
+    
+    test('should complete correctly', () {
+      final todo = Todo(title: '測試');
+      todo.complete();
+      expect(todo.status, TodoStatus.completed);
+      expect(todo.completedAt, isNotNull);
+    });
+  });
+}
+```
+
+## 小部件測試 (Widget Tests)
+
+- **目的**：測試 UI 元件渲染和互動功能
+- **命名規範**：`<小部件名>_test.dart` (如 `home_screen_test.dart`)
+- **執行命令**：`flutter test test/widget/`
+
+### 小部件測試範例
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:chat_first_todo/ui/screens/todo_screen.dart';
+
+void main() {
+  testWidgets('TodoScreen should display items', (WidgetTester tester) async {
+    // 構建測試部件樹
+    await tester.pumpWidget(
+      const ProviderScope(
+        child: MaterialApp(home: TodoScreen()),
+      ),
+    );
+    
+    // 等待動畫完成
+    await tester.pumpAndSettle();
+    
+    // 檢查是否有特定文本
+    expect(find.text('待辦事項'), findsOneWidget);
+    
+    // 測試互動
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpAndSettle();
+    
+    // 檢查互動結果
+    expect(find.byType(Dialog), findsOneWidget);
+  });
+}
+```
+
+### 常用小部件測試方法
+
+- **尋找元素**：
+  - `find.text('文字內容')`：尋找特定文字
+  - `find.byIcon(Icons.add)`：尋找特定圖標
+  - `find.byType(Button)`：尋找特定類型部件
+  - `find.byKey(Key('my-key'))`：尋找特定 Key 的部件
+
+- **互動模擬**：
+  - `tester.tap(finder)`：點擊
+  - `tester.drag(finder, Offset(dx, dy))`：拖曳
+  - `tester.enterText(finder, 'text')`：輸入文字
+  - `tester.longPress(finder)`：長按
+
+- **等待更新**：
+  - `tester.pump()`：觸發一次畫面更新
+  - `tester.pumpAndSettle()`：等待所有動畫完成
+
+## 整合測試 (Integration Tests)
+
+- **目的**：測試整個應用程式的功能流程
+- **命名規範**：`<功能>_flow_test.dart` (如 `app_flow_test.dart`)
+- **執行命令**：`flutter test test/integration/`
+
+### 整合測試範例
+
+```dart
+void main() {
+  group('App Flow', () {
+    testWidgets('User can add and complete todos', (WidgetTester tester) async {
+      await tester.pumpWidget(const ProviderScope(child: MyApp()));
+      await tester.pumpAndSettle();
+      
+      // 導航到待辦頁面
+      await tester.tap(find.text('查看待辦事項'));
+      await tester.pumpAndSettle();
+      
+      // 添加新待辦
+      await tester.tap(find.byIcon(Icons.add));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '測試待辦');
+      await tester.tap(find.text('保存'));
+      await tester.pumpAndSettle();
+      
+      // 驗證待辦已添加
+      expect(find.text('測試待辦'), findsOneWidget);
+      
+      // 完成待辦
+      await tester.tap(find.byType(Checkbox).first);
+      await tester.pumpAndSettle();
+      
+      // 驗證狀態變更
+      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox).first);
+      expect(checkbox.value, isTrue);
+    });
+  });
+}
+```
+
+## 可視化 UI 測試 (有需要時)
+
+如果需要看到測試過程中的 UI 互動，請使用整合測試套件：
+
+1. 添加依賴：
+```yaml
+dev_dependencies:
+  integration_test: ^2.0.0
+```
+
+2. 創建整合測試文件 `integration_test/app_test.dart`
+
+3. 執行命令：
+```bash
+flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart
+```
+
+## 測試覆蓋率
+
+使用以下命令獲取測試覆蓋率報告：
+
+```bash
+flutter test --coverage
+genhtml coverage/lcov.info -o coverage/html
+```
+
+在 macOS 上打開覆蓋率報告：
+```bash
+open coverage/html/index.html
+```
+
+## 測試最佳實踐
+
+- **測試獨立性**：每個測試應獨立運行，不依賴其他測試結果
+- **清晰命名**：測試名稱應描述預期行為 (如 `'should create todo with default status'`)
+- **合理分組**：使用 `group()` 將相關測試組織在一起
+- **測試邊界條件**：測試正常情況、邊界情況和錯誤情況
+- **避免過度模擬**：儘量使用真實對象，僅在必要時使用 mock
+- **測試結果而非實現**：測試應驗證行為結果，而非實現細節
+
+## 自動化測試整合
+
+在 CI/CD 管道中添加以下命令來自動執行測試：
+
+```yaml
+- name: Run Flutter tests
+  run: flutter test
+```
+
+## 測試驅動開發 (TDD)
+
+遵循「紅-綠-重構」循環：
+1. 先編寫測試 (紅)
+2. 實現功能直到測試通過 (綠)
+3. 重構代碼保持清潔 (重構)
+
+## 注意事項
+
+- 將敏感數據 (API Key 等) 排除在測試之外
+- 對於複雜小部件測試，使用 `testWidgets` 中的 `pumAndSettle` 或 `pump` 進行刷新
+- 靜態分析也是測試的一部分，定期運行 `flutter analyze`
+
+---
+
+*更多測試信息請參考 [Flutter 官方測試文檔](mdc:https:/docs.flutter.dev/testing)*

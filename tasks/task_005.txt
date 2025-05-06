@@ -1,0 +1,121 @@
+# Task ID: 5
+# Title: Implement Chat UI and Task Cards
+# Status: pending
+# Dependencies: 1, 2, 4
+# Priority: medium
+# Description: Create the chat interface with bubbles and inline TaskCard widgets with quick actions as specified in F-5.
+# Details:
+1. Create ChatPage widget with message bubbles:
+```dart
+class ChatPage extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final messages = ref.watch(chatMessagesProvider);
+    
+    return Scaffold(
+      appBar: AppBar(title: Text('Chat-First To-Do')),
+      body: Column(
+        children: [
+          Expanded(
+            child: ListView.builder(
+              itemCount: messages.length,
+              itemBuilder: (context, index) {
+                final message = messages[index];
+                if (message.containsTask) {
+                  return TaskCard(task: message.task);
+                }
+                return MessageBubble(
+                  message: message.text,
+                  isUser: message.isUser,
+                );
+              },
+            ),
+          ),
+          ChatInput(onSend: (text) {
+            ref.read(chatServiceProvider).sendMessage(text);
+          }),
+        ],
+      ),
+    );
+  }
+}
+```
+
+2. Create TaskCard widget with quick actions:
+```dart
+class TaskCard extends StatelessWidget {
+  final Task task;
+  
+  const TaskCard({required this.task});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: _getPriorityColor(task.priority),
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(task.title, style: TextStyle(fontWeight: FontWeight.bold)),
+            if (task.deadline != null)
+              Text('Due: ${DateFormat.yMMMd().format(task.deadline!)}'),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: Icon(task.status == Status.completed 
+                    ? Icons.check_box 
+                    : Icons.check_box_outline_blank),
+                  onPressed: () => _toggleTaskStatus(context, task),
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () => _deleteTask(context, task),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+```
+
+3. Implement streaming token display for perceived speed
+4. Add color cues for priority levels
+5. Implement accessibility features (Dynamic Type, VoiceOver support)
+
+# Test Strategy:
+1. Widget tests for ChatPage and TaskCard
+2. Golden tests for UI components
+3. Accessibility testing with screen readers
+4. Test dynamic type size adaptations
+5. Test color contrast for accessibility compliance
+
+# Subtasks:
+## 1. Implement Chat Message Bubbles and Input UI [pending]
+### Dependencies: None
+### Description: Create the core chat interface with message bubbles and text input field
+### Details:
+Design and implement user and AI message bubbles with different styling. Create a text input field with send button. Implement basic layout and scrolling behavior for the chat history. Add timestamp display and read receipts if needed. Ensure proper keyboard handling and input focus management.
+
+## 2. Develop TaskCard Widget with Quick Actions [pending]
+### Dependencies: 5.1
+### Description: Create an interactive TaskCard widget that displays task information with quick action buttons
+### Details:
+Design the TaskCard UI component with task title, description, and status indicators. Implement quick action buttons (e.g., complete, edit, delete) with appropriate visual feedback. Add animations for card expansion/collapse. Ensure the card integrates seamlessly with the chat message flow. Implement state management for task status changes.
+
+## 3. Implement Streaming Token Display [pending]
+### Dependencies: 5.1
+### Description: Create a system for displaying AI responses as streaming tokens with typing animation
+### Details:
+Implement token-by-token text rendering to simulate typing. Create a state management system to handle streaming response data. Add typing indicators and appropriate animations. Ensure proper handling of markdown or rich text formatting within the stream. Optimize performance for smooth animations even with long responses.
+
+## 4. Add Accessibility Features [pending]
+### Dependencies: 5.1, 5.2, 5.3
+### Description: Ensure the chat UI is fully accessible with screen reader support and keyboard navigation
+### Details:
+Add semantic labels and descriptions for all UI elements. Implement proper focus order and keyboard navigation. Ensure screen reader compatibility for dynamic content like streaming messages. Add high contrast mode support and scalable text. Test with accessibility tools and fix any issues. Document accessibility features for future reference.
+

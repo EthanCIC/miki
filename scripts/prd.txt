@@ -1,0 +1,215 @@
+# Chat-First To-Do App — PRD v2.2
+Document Owner : Ethan C.
+Last Updated : 2025-05-06
+Status : Draft for Review
+
+========================================
+## 1 · Overview
+----------------------------------------
+Chat‑First To‑Do App is a cross‑platform task manager that lets people **capture, query and update tasks through natural‑language chat**.  
+Stack 2.0+:
+
+* **Frontend** – Flutter 3.24 + (Dart). One code‑base → iOS 17+, Android 11+, Web (PWA), macOS, Windows, Linux.
+* **Backend** – Python 3.12 + FastAPI + LangGraph (orchestrating GPT‑4o via function calling).
+
+Primary personas:
+
+* **Alex** – solo knowledge worker juggling multiple projects; values speed & reminders.
+* **Jamie** – student managing coursework deadlines; mixes zh/en in chat.
+
+----------------------------------------
+## 2 · Goals & Success Metrics
+----------------------------------------
+| Goal | Metric |
+|------|--------|
+| **Rapid Task Capture** | ≥ 90 % of tasks are captured via chat in ≤ 10 s |
+| **Reliable Reminders** | 100 % of tasks with a deadline fire ≥ 1 notification |
+| **Actionable Suggestions** | ≥ 70 % of users rate daily suggestions “useful” |
+| **Intelligent Conversation** | ≥ 85 % of dialogues handled without clarification |
+
+----------------------------------------
+## 3 · Core Features (MVP v0.3)
+----------------------------------------
+
+### 3.1 · User Stories
+* **US‑1** – As a user I create a task with one chat sentence.  
+* **US‑2** – I list my open tasks.  
+* **US‑3** – I mark / un‑mark tasks done via chat or tap.  
+* **US‑4** – I delete a task by referencing it in chat.  
+* **US‑5** – I ask “今天先做什麼？” to get a prioritised list.  
+* **US‑6** – I receive reminders 60 min before, at due time and 09:00 daily digest of overdue.  
+* **US‑7** – The bot handles ambiguous commands with follow‑up questions.
+
+### 3.2 · Functional Requirements
+**F‑1 LLM Orchestration (Backend)**  
+* LangGraph pipeline (Parse → Disambiguate → CRUD → Suggest → Respond).  
+* Model: GPT‑4o, zh‑en mixed, function calling returns  
+  `{title, deadline?, category?, priority('low'|'medium'|'high')}`.  
+* Defaults: `priority=medium`, `category=general`.
+
+**F‑2 Task Data Model (Client)** – stored locally with Isar  
+```dart
+class Task {
+  String id;            // uuid
+  String title;
+  DateTime? deadline;
+  String category;
+  Priority priority;
+  Status status;        // open | completed
+  DateTime createdAt;
+  String? recurrenceRule;
+}
+```
+
+**F‑3 Data Sync** – opt‑in JWT auth and /sync endpoint; queued offline.
+
+**F‑4 Build & Platforms** – Flutter multiplatform, PWA for Web.
+
+**F‑5 Chat Interface** – bubbles + inline `TaskCard` with quick actions.
+
+**F‑6 Task List View** – grouped Overdue / Today / Upcoming, drag‑reorder.
+
+**F‑7 Feature Flags** – Riverpod providers, default off in release.
+
+**F‑8 Notifications** – flutter_local_notifications; prune when >60 scheduled.
+
+**F‑9 Suggestion Engine** – LangGraph node ranks tasks via priority+deadline.
+
+**F‑10 Conversation Management** – clarification_required action + UI chips.
+
+**F‑11 API Reliability & Cost** – retry with back‑off, Redis cache, 3.5 fallback.
+
+**F‑12 Unit Testing** – client & backend, coverage ≥ 85 %.
+
+**F‑13 UI Testing** – three E2E cases: create‑task, mark‑done, view‑list.
+
+----------------------------------------
+## 4 · User Experience
+----------------------------------------
+### 4.1 Personas & Key Flows  
+(unchanged from v1.0; see Appendix A)
+
+### 4.2 UI / UX Principles  
+* Conversational, friendly tone.  
+* Show streaming tokens for perceived speed.  
+* Inline TaskCards, colour cues for priority.  
+* Accessibility: Dynamic Type, VoiceOver.
+
+----------------------------------------
+## 5 · Technical Architecture
+----------------------------------------
+```
+Client (Flutter)
+ ├── ChatPage / ListPage (Riverpod)
+ ├── Local DB (Isar)
+ ├── Notification Scheduler
+ └── Auth (JWT) ──▶ WebSocket
+Backend (Python)
+ ├── FastAPI + LangServe
+ ├── LangGraph
+ ├── Postgres + pgvector
+ └── Redis
+        │
+        └── OpenAI GPT‑4o
+```
+Offline queue → replay on reconnect; CRDT‑style merge on sync.
+
+----------------------------------------
+## 6 · Development Roadmap
+----------------------------------------
+Each phase ends with **Testing Focus** mapped from Section 10.2.
+
+### **Phase 1 · Foundation**
+* **Tasks** – Flutter scaffold, Isar schema, FastAPI skeleton, CI skeleton.
+* **Testing Focus** – project compiles; linters pass; initial unit‑test targets.
+
+### **Phase 2 · Core Chat Loop**
+* **Tasks** – WebSocket client/server, echo LangGraph chain.
+* **Testing Focus** – unit tests for WS handling; integration smoke test for WS round‑trip.
+
+### **Phase 3 · Task Creation via Chat**
+* **Tasks** – function‑calling parse, Isar insert, backend endpoint.
+* **Testing Focus** – unit tests for parsing (mock LLM) & Isar ops; integration test for Create; UI E2E test **F‑13a**.
+
+### **Phase 4 · Task Viewing & Management**
+* **Tasks** – ListPage UI, status toggle, Riverpod state.
+* **Testing Focus** – unit tests for state logic; UI E2E **F‑13b F‑13c**; add golden tests after UI stabilises.
+
+### **Phase 5 · Notifications**
+* **Tasks** – schedule 60 min / due / digest, permission flow.
+* **Testing Focus** – unit tests for schedule calculation; manual device check for delivery.
+
+### **Phase 6 · Intelligent Suggestions**
+* **Tasks** – LangGraph ranking node, client display.
+* **Testing Focus** – unit tests for ranking (mock data); integration test for suggestion flow.
+
+### **Phase 7 · Data Sync**
+* **Tasks** – JWT auth, /sync endpoints, client merge logic.
+* **Testing Focus** – unit tests for sync & conflict; integration tests for /auth and /sync.
+
+### **Phase 8 · Polish & Hardening**
+* **Tasks** – accessibility, performance, feature flags, docs.
+* **Testing Focus** – all UI E2E pass; coverage ≥ 85 %; golden snapshots finalised; exploratory + performance tests.
+
+----------------------------------------
+## 7 · Risks & Mitigations
+----------------------------------------
+* API latency → cache / streaming tokens.  
+* OpenAI cost → prompt budget + model fallback.  
+* Cross‑platform UI quirks → golden tests.  
+* Isar schema migration → versioned adapters.
+
+----------------------------------------
+## 8 · Acceptance Criteria
+----------------------------------------
+AC‑1 – AC‑11 from v1.0, updated for Flutter/Isar & integration_test.
+
+----------------------------------------
+## 9 · Next Actions
+----------------------------------------
+1. Sign‑off PRD v2.2.  
+2. Import to Cursor Task Manager → auto‑expand Phase 1 tasks.  
+3. Draft LangGraph node specs.  
+4. Start Sprint 1.
+
+----------------------------------------
+## 10 · Engineering Process & Quality Gates
+----------------------------------------
+### 10.1 Development Workflow
+* Prototype → stabilise → **add golden tests**.  
+* Pure‑function modules follow **Red – Green – Refactor** TDD.
+
+### 10.2 Testing Levels
+| Level | Scope | Tooling | Policy |
+|-------|-------|---------|--------|
+| **Unit** | Dart pure func, Python nodes | `flutter test`, `pytest` | coverage ≥ 85 % on domain & services |
+| **Integration** | WS round‑trip, LangGraph pipelines | `pytest‑asyncio`, `integration_test` | ≥ 1 smoke per critical flow |
+| **UI (E2E)** | create, complete, list | Flutter **integration_test** | must pass on CI |
+| **Golden** | stable widgets | `golden_toolkit` | added post‑design lock |
+
+### 10.3 Continuous Integration
+Cursor Task Manager auto‑runs:
+```sh
+dart format --set-exit-if-changed .
+flutter analyze
+flutter test --coverage
+pytest -q
+flutter test integration_test  # core UI flows
+```
+Any failure blocks merge; coverage artefact uploaded.
+
+### 10.4 Feature Flags
+All new code behind provider flags; off in release until AC met.
+
+### 10.5 Pull‑Request Guidelines
+* ≤ 400 LOC; include/ update tests; green CI; auto‑format.
+
+### 10.6 Definition of Done
+* Story AC met; coverage ≥ previous; no TODOs lacking ticket.
+
+----------------------------------------
+## Appendix A · User Flows (excerpt)
+----------------------------------------
+*Flow 1 — Add Task via Chat* …  
+*Flow 2 — View Tasks* …  
+(unchanged from v1.0 for brevity)

@@ -1,0 +1,104 @@
+# Task ID: 6
+# Title: Implement Task List View
+# Status: pending
+# Dependencies: 2, 5
+# Priority: medium
+# Description: Create the Task List View with grouping by Overdue/Today/Upcoming and drag-reorder functionality as specified in F-6.
+# Details:
+1. Create TaskListPage widget with grouped sections:
+```dart
+class TaskListPage extends ConsumerWidget {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tasks = ref.watch(tasksProvider);
+    
+    // Group tasks
+    final overdueTasks = tasks.where(_isOverdue).toList();
+    final todayTasks = tasks.where(_isToday).toList();
+    final upcomingTasks = tasks.where(_isUpcoming).toList();
+    
+    return Scaffold(
+      appBar: AppBar(title: Text('Tasks')),
+      body: ListView(
+        children: [
+          if (overdueTasks.isNotEmpty)
+            TaskSection(title: 'Overdue', tasks: overdueTasks, color: Colors.red),
+          if (todayTasks.isNotEmpty)
+            TaskSection(title: 'Today', tasks: todayTasks, color: Colors.blue),
+          if (upcomingTasks.isNotEmpty)
+            TaskSection(title: 'Upcoming', tasks: upcomingTasks, color: Colors.green),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () => Navigator.push(context, MaterialPageRoute(
+          builder: (context) => ChatPage(),
+        )),
+      ),
+    );
+  }
+}
+```
+
+2. Implement TaskSection with ReorderableListView for drag-reorder:
+```dart
+class TaskSection extends StatelessWidget {
+  final String title;
+  final List<Task> tasks;
+  final Color color;
+  
+  const TaskSection({required this.title, required this.tasks, required this.color});
+  
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: color)),
+        ),
+        ReorderableListView(
+          shrinkWrap: true,
+          physics: NeverScrollableScrollPhysics(),
+          children: tasks.map((task) => TaskListItem(key: ValueKey(task.id), task: task)).toList(),
+          onReorder: (oldIndex, newIndex) {
+            // Handle reordering logic
+          },
+        ),
+      ],
+    );
+  }
+}
+```
+
+3. Implement task filtering and sorting logic
+4. Add task completion animation
+5. Implement swipe actions for quick complete/delete
+
+# Test Strategy:
+1. Widget tests for TaskListPage and TaskSection
+2. Unit tests for task grouping and filtering logic
+3. Integration tests for task reordering
+4. UI E2E test for viewing task list (F-13c)
+5. Golden tests for list view components
+
+# Subtasks:
+## 1. Implement TaskListPage with grouped sections [pending]
+### Dependencies: None
+### Description: Create the TaskListPage component with the ability to group tasks by different criteria (date, priority, project, etc.)
+### Details:
+Develop the main TaskListPage component that displays tasks in grouped sections. Implement the UI layout with headers for each group. Create the logic to group tasks by different criteria such as due date, priority level, project, or custom categories. Include proper styling for section headers and task items. Ensure the view adapts to different screen sizes.
+
+## 2. Add drag-reorder functionality with ReorderableListView [pending]
+### Dependencies: 6.1
+### Description: Implement the ability to reorder tasks using drag and drop with Flutter's ReorderableListView
+### Details:
+Integrate Flutter's ReorderableListView to enable drag-and-drop reordering of tasks. Implement the onReorder callback to update task positions in the data model. Add visual feedback during the drag operation. Ensure reordering works correctly within groups and potentially between groups. Handle edge cases like reordering the first or last item. Update the backend/database with the new order after reordering.
+
+## 3. Implement task filtering, sorting, and quick actions [pending]
+### Dependencies: 6.1
+### Description: Add functionality for filtering and sorting tasks, plus quick action buttons for common operations
+### Details:
+Create filter controls to show/hide tasks based on criteria like completion status, due date range, priority, or tags. Implement sorting options (by date, priority, alphabetical, etc.). Add quick action buttons for common operations like marking complete, changing priority, or rescheduling. Design an intuitive UI for accessing these features, possibly using a filter bar or dropdown menu. Ensure all filtering and sorting operations are efficient and maintain the grouped structure.
+

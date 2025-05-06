@@ -1,0 +1,45 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Miki 專案路徑
+
+## 重要路徑
+- **專案根目錄**: `/Users/ethancic/Documents/miki`
+- **Flutter 應用目錄**: `/Users/ethancic/Documents/miki/chat_first_todo`
+- **Flutter 源碼目錄**: `/Users/ethancic/Documents/miki/chat_first_todo/lib`
+- **任務管理配置檔案**: `/Users/ethancic/Documents/miki/.taskmasterconfig`
+
+## 模塊結構
+Flutter 應用程序 (`chat_first_todo/lib/`) 採用以下目錄結構:
+
+- **config/**: 應用程式配置、環境設置
+- **core/**: 
+  - **constants/**: 應用常量、字符串等
+  - **utils/**: 通用工具函數和輔助類
+- **data/**: 
+  - **models/**: 數據模型類和實體
+  - **repositories/**: 數據存取邏輯和抽象
+  - **services/**: API 服務、本地存儲等
+- **features/**: 按功能模塊組織的代碼
+  - **chat/**: 聊天功能相關組件
+  - **todo/**: 任務管理功能相關組件
+- **ui/**: 
+  - **common/**: 共用 UI 組件
+  - **theme/**: 主題定義和樣式
+
+## 重要文件
+- **主應用入口**: `chat_first_todo/lib/main.dart`
+- **主題定義**: `chat_first_todo/lib/ui/theme/app_theme.dart`
+- **應用常量**: `chat_first_todo/lib/core/constants/app_constants.dart`
+
+## 路徑使用指南
+- 使用絕對路徑時，應始終從專案根目錄 (`/Users/ethancic/Documents/miki`) 開始
+- 在 Task Master 操作中，必須指定正確的 `projectRoot` 參數為 `/Users/ethancic/Documents/miki`
+- 在搜索檔案或引用代碼時，根據當前上下文選擇適當的起始目錄
+
+## 重要提示
+- Flutter 應用目錄 (`chat_first_todo`) 與專案名稱 (`miki`) 不同，使用時需注意
+- Task Master 配置檔案位於專案根目錄，而非 Flutter 應用目錄
+- 所有終端命令應在專案根目錄或明確指定的子目錄中執行

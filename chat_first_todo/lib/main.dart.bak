@@ -1,0 +1,221 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:miki/config/router.dart';
+import 'package:miki/core/constants/app_constants.dart';
+import 'package:miki/ui/theme/app_theme.dart';
+
+void main() {
+  // 確保Flutter綁定初始化
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // 運行應用程式並包裝在ProviderScope中以啟用Riverpod
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
+}
+
+// 我們的應用程式Widget
+class MyApp extends ConsumerWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 使用Riverpod獲取主題
+    final theme = ref.watch(appThemeProvider);
+    
+    // 獲取路由器
+    final router = ref.watch(routerProvider);
+    
+    return MaterialApp.router(
+      title: AppConstants.appName,
+      theme: theme,
+      debugShowCheckedModeBanner: false,
+      routerDelegate: router.routerDelegate,
+      routeInformationParser: router.routeInformationParser,
+      routeInformationProvider: router.routeInformationProvider,
+    );
+  }
+}
+
+// 首頁螢幕
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key, required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // 獲取是否為暗黑模式
+    final isDarkMode = ref.watch(themeProvider);
+    final theme = Theme.of(context);
+    
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(title),
+        elevation: 0,
+        actions: [
+          // 深淺色主題切換按鈕
+          IconButton(
+            icon: Icon(isDarkMode ? Icons.light_mode : Icons.dark_mode),
+            onPressed: () {
+              // 切換主題
+              ref.read(themeProvider.notifier).state = !isDarkMode;
+            },
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: isDarkMode 
+              ? const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.darkBackground,
+                    Color(0xFF191919),
+                  ],
+                )
+              : null,
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(height: AppSpacing.lg),
+                // 歡迎標題
+                Text(
+                  '您好，我是',
+                  style: AppTextStyles.heading3(isDarkMode),
+                ),
+                Text(
+                  AppConstants.appName,
+                  style: AppTextStyles.heading1(isDarkMode).copyWith(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '您的智能個人助理，隨時為您提供幫助',
+                  style: AppTextStyles.bodyMedium(isDarkMode),
+                ),
+                
+                const SizedBox(height: AppSpacing.xxl),
+                
+                // 功能卡片
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // 待辦事項卡片
+                      _buildFeatureCard(
+                        context,
+                        isDarkMode,
+                        icon: Icons.task_alt,
+                        title: '任務管理',
+                        description: '我可以幫您管理日程和待辦事項',
+                        onTap: () {
+                          // TODO: 導航到待辦事項頁面
+                        },
+                      ),
+                      
+                      const SizedBox(height: AppSpacing.lg),
+                      
+                      // 聊天卡片
+                      _buildFeatureCard(
+                        context,
+                        isDarkMode,
+                        icon: Icons.chat_bubble_outline,
+                        title: '智能對話',
+                        description: '與我聊天，我可以記錄並創建任務',
+                        onTap: () {
+                          // TODO: 導航到聊天頁面
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          // TODO: 添加新的待辦事項
+        },
+        elevation: 4,
+        backgroundColor: AppColors.accent,
+        tooltip: '快速添加任務',
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+  
+  // 創建功能卡片
+  Widget _buildFeatureCard(
+    BuildContext context, 
+    bool isDarkMode, {
+    required IconData icon,
+    required String title,
+    required String description,
+    required VoidCallback onTap,
+  }) {
+    return Card(
+      elevation: isDarkMode ? 8 : 4,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icon,
+                  size: 30,
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: AppTextStyles.heading3(isDarkMode),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      description,
+                      style: AppTextStyles.bodySmall(isDarkMode),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: isDarkMode ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

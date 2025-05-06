@@ -1,0 +1,81 @@
+# Task ID: 10
+# Title: Implement Suggestion Engine
+# Status: pending
+# Dependencies: 7, 8
+# Priority: medium
+# Description: Create the suggestion engine to rank and prioritize tasks based on priority and deadline as specified in F-9 and US-5.
+# Details:
+1. Implement LangGraph node for task prioritization:
+```python
+def prioritize_tasks(state):
+    # Get all open tasks
+    tasks = get_all_open_tasks()
+    
+    if not tasks:
+        state["response"] = "You don't have any open tasks."
+        return state
+    
+    # Prepare context for LLM
+    task_context = "\n".join([f"- {task['title']} (Priority: {task['priority']}, Due: {task['deadline'] or 'No deadline'})" for task in tasks])
+    
+    llm = ChatOpenAI(model="gpt-4o", temperature=0)
+    response = llm.invoke([
+        {"role": "system", "content": "Prioritize tasks based on deadline, priority, and context. Support Chinese queries."},
+        {"role": "user", "content": f"Here are my tasks:\n{task_context}\n\nWhat should I do first?"}
+    ])
+    
+    # Extract prioritized list
+    state["prioritized_tasks"] = tasks
+    state["response"] = response.content
+    return state
+```
+
+2. Connect prioritization to chat interface:
+```python
+def handle_prioritization_request(state):
+    user_message = state["messages"][-1]["content"]
+    
+    # Check if message is asking for prioritization
+    # Support Chinese queries like "今天先做什麼？"
+    if is_prioritization_request(user_message):
+        return prioritize_tasks(state)
+    
+    return state
+```
+
+3. Implement client-side display of prioritized tasks
+4. Add caching for suggestion results to reduce API calls
+5. Implement feedback mechanism for suggestion quality
+
+# Test Strategy:
+1. Unit tests for prioritization logic with various task scenarios
+2. Test multilingual support for prioritization requests
+3. Integration test for suggestion flow
+4. Test caching mechanism
+5. Test with edge cases (no tasks, all tasks completed, etc.)
+
+# Subtasks:
+## 1. Implement LangGraph Prioritization Node [pending]
+### Dependencies: None
+### Description: Create a LangGraph node that processes user tasks and generates prioritized suggestions
+### Details:
+Develop a specialized LangGraph node that takes user input and context, then uses LLM reasoning to identify and prioritize potential next actions. Include logic for task categorization, importance assessment, and dependency analysis. Ensure the node outputs a structured format with priority scores and rationales that can be consumed by downstream components.
+
+## 2. Develop Multilingual Request Handler [pending]
+### Dependencies: 10.1
+### Description: Create a system to process suggestion requests in multiple languages
+### Details:
+Implement a request handling layer that can accept task descriptions in various languages, detect the language, and ensure the prioritization logic works consistently across languages. Include translation capabilities where needed, maintain context across language switches, and ensure suggestion quality remains consistent regardless of input language.
+
+## 3. Build Client-side Display Component [pending]
+### Dependencies: 10.1
+### Description: Create UI components to show prioritized suggestions in the chat interface
+### Details:
+Develop frontend components that render prioritized suggestions in an intuitive, actionable format. Include visual indicators for priority levels, interactive elements for selection/dismissal, and smooth animations for suggestion updates. Ensure the display is responsive and accessible across different devices and screen sizes.
+
+## 4. Implement Caching and Feedback System [pending]
+### Dependencies: 10.1, 10.3
+### Description: Create mechanisms to cache suggestions and collect user feedback
+### Details:
+Develop a caching system to store and quickly retrieve previously generated suggestions. Implement user feedback collection to track which suggestions were helpful, and create a mechanism to incorporate this feedback into future prioritization. Include analytics to measure suggestion quality and user engagement over time.
+

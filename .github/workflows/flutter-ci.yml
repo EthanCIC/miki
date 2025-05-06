@@ -1,0 +1,74 @@
+name: Miki Flutter CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:  # 允許手動觸發
+
+jobs:
+  test:
+    name: 測試和分析
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./chat_first_todo
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 設置 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.9'
+          channel: 'stable'
+          cache: true
+      
+      - name: 獲取依賴
+        run: flutter pub get
+      
+      - name: 檢查格式
+        run: dart format --output=none --set-exit-if-changed .
+      
+      - name: 分析代碼
+        run: flutter analyze
+      
+      - name: 運行測試
+        run: flutter test
+
+  build-ios:
+    name: 建構 iOS 應用
+    needs: test
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: ./chat_first_todo
+
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: 設置 Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.9'
+          channel: 'stable'
+          cache: true
+      
+      - name: 獲取依賴
+        run: flutter pub get
+      
+      - name: iOS Pod Setup
+        run: |
+          cd ios
+          pod install
+          cd ..
+      
+      - name: 建構 iOS (模擬器版本)
+        run: flutter build ios --debug --no-codesign --simulator
+      
+      - name: 建構 iOS (設備版本)
+        run: flutter build ios --debug --no-codesign
+      
+      - name: 建構完成通知
+        run: echo "iOS 建構完成。由於簽名限制，無法產生完整 IPA 檔案。"
