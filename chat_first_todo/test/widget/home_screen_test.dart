@@ -19,7 +19,8 @@ void main() {
       );
 
       expect(find.text('您好，我是'), findsOneWidget);
-      expect(find.text(AppConstants.appName), findsWidgets); // AppBar title + Body text
+      expect(find.text(AppConstants.appName),
+          findsWidgets); // AppBar title + Body text
       expect(find.text('您的智能個人助理，隨時為您提供幫助'), findsOneWidget);
     });
 
@@ -51,12 +52,13 @@ void main() {
       );
 
       // 根據初始圖示點擊並驗證切換
-      final isInitiallyLight = find.byIcon(Icons.dark_mode).evaluate().isNotEmpty;
-      
+      final isInitiallyLight =
+          find.byIcon(Icons.dark_mode).evaluate().isNotEmpty;
+
       if (isInitiallyLight) {
         expect(find.byIcon(Icons.dark_mode), findsOneWidget);
         await tester.tap(find.byIcon(Icons.dark_mode));
-        await tester.pumpAndSettle(); 
+        await tester.pumpAndSettle();
         expect(find.byIcon(Icons.light_mode), findsOneWidget);
       } else {
         expect(find.byIcon(Icons.light_mode), findsOneWidget);
@@ -83,19 +85,23 @@ void main() {
       await tester.pumpAndSettle();
 
       // 確認 HomeScreen 內容透過 MyApp 成功渲染
-      expect(find.text('您好，我是'), findsOneWidget, reason: "MyApp 未能正確渲染 HomeScreen 上的 '您好，我是'");
-      expect(find.text(AppConstants.appName), findsWidgets, reason: "MyApp 未能正確渲染 HomeScreen 上的 AppName");
+      expect(find.text('您好，我是'), findsOneWidget,
+          reason: "MyApp 未能正確渲染 HomeScreen 上的 '您好，我是'");
+      expect(find.text(AppConstants.appName), findsWidgets,
+          reason: "MyApp 未能正確渲染 HomeScreen 上的 AppName");
 
       // Banner 檢查 (只在 debug mode)
-      expect(find.byType(Banner).evaluate().length <= 1, true, reason: "Banner 檢查失敗");
-      
+      expect(find.byType(Banner).evaluate().length <= 1, true,
+          reason: "Banner 檢查失敗");
+
       // 此處可以加入 MyApp 層級的主題切換測試，如果需要的話
       // 例如，找到 AppBar 上的 IconButton 並點擊，然後驗證主題變化
     });
   });
 
   // 此測試保持原樣，因為它的目的是直接測試 HomeScreen 的 title。
-  testWidgets('HomeScreen title should be displayed correctly from parameter', (WidgetTester tester) async {
+  testWidgets('HomeScreen title should be displayed correctly from parameter',
+      (WidgetTester tester) async {
     const testTitle = 'Test Title For HomeScreen';
     await tester.pumpWidget(
       const ProviderScope(
