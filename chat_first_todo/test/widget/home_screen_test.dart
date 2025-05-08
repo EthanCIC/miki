@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:miki/main.dart';
 import 'package:miki/core/constants/app_constants.dart';
-import 'package:miki/ui/theme/app_theme.dart';
 import 'package:miki/ui/common/screens/home_screen.dart';
 
 void main() {

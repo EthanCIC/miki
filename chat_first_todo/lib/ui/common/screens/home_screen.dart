@@ -15,7 +15,6 @@ class HomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // 獲取是否為暗黑模式
     final isDarkMode = ref.watch(themeProvider);
-    final theme = Theme.of(context);
 
     return Scaffold(
       appBar: AppBar(
