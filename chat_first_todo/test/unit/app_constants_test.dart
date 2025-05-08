@@ -26,8 +26,8 @@ void main() {
       // 驗證錯誤訊息不為空
       expect(ErrorMessages.networkError, isNotEmpty);
       expect(ErrorMessages.serverError, isNotEmpty);
-      expect(ErrorMessages.unexpectedError, isNotEmpty);
-      expect(ErrorMessages.authError, isNotEmpty);
+      expect(ErrorMessages.timeoutError, isNotEmpty);
+      expect(ErrorMessages.authenticationError, isNotEmpty);
     });
   });
 }

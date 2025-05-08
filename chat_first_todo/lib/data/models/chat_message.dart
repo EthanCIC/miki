@@ -116,20 +116,20 @@ class ChatMessage {
   /// 從 JSON 創建
   factory ChatMessage.fromJson(Map<String, dynamic> json) {
     var message = ChatMessage(
-      content: json['content'],
-      sender: SenderType.values[json['sender'] ?? 0],
-      type: MessageType.values[json['type'] ?? 0],
-      todoId: json['todoId'],
-      attachmentUrl: json['attachmentUrl'],
-      needsAttention: json['needsAttention'] ?? false,
+      content: json['content'] as String,
+      sender: SenderType.values[(json['sender'] as int?) ?? 0],
+      type: MessageType.values[(json['type'] as int?) ?? 0],
+      todoId: json['todoId'] as int?,
+      attachmentUrl: json['attachmentUrl'] as String?,
+      needsAttention: (json['needsAttention'] as bool?) ?? false,
     );
 
-    message.id = json['id'] ?? Isar.autoIncrement;
-    message.isRead = json['isRead'] ?? false;
-    message.hasAttachment = json['hasAttachment'] ?? false;
+    message.id = (json['id'] as int?) ?? Isar.autoIncrement;
+    message.isRead = (json['isRead'] as bool?) ?? false;
+    message.hasAttachment = (json['hasAttachment'] as bool?) ?? false;
 
     if (json['timestamp'] != null) {
-      message.timestamp = DateTime.parse(json['timestamp']);
+      message.timestamp = DateTime.parse(json['timestamp'] as String);
     }
 
     return message;

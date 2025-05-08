@@ -189,37 +189,37 @@ class Todo {
   /// 從 JSON 創建
   factory Todo.fromJson(Map<String, dynamic> json) {
     var todo = Todo(
-      title: json['title'],
-      description: json['description'],
-      priority: TodoPriority.values[json['priority'] ?? 1],
-      status: TodoStatus.values[json['status'] ?? 0],
-      isImportant: json['isImportant'] ?? false,
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      priority: TodoPriority.values[(json['priority'] as int?) ?? 1],
+      status: TodoStatus.values[(json['status'] as int?) ?? 0],
+      isImportant: (json['isImportant'] as bool?) ?? false,
     );
 
-    todo.id = json['id'] ?? Isar.autoIncrement;
+    todo.id = (json['id'] as int?) ?? Isar.autoIncrement;
 
     if (json['dueDate'] != null) {
-      todo.dueDate = DateTime.parse(json['dueDate']);
+      todo.dueDate = DateTime.parse(json['dueDate'] as String);
     }
 
     todo.createdAt = json['createdAt'] != null
-        ? DateTime.parse(json['createdAt'])
+        ? DateTime.parse(json['createdAt'] as String)
         : DateTime.now();
 
     todo.updatedAt = json['updatedAt'] != null
-        ? DateTime.parse(json['updatedAt'])
+        ? DateTime.parse(json['updatedAt'] as String)
         : DateTime.now();
 
     if (json['completedAt'] != null) {
-      todo.completedAt = DateTime.parse(json['completedAt']);
+      todo.completedAt = DateTime.parse(json['completedAt'] as String);
     }
 
     if (json['tags'] != null) {
-      todo.tags = List<String>.from(json['tags']);
+      todo.tags = List<String>.from(json['tags'] as Iterable<dynamic>);
     }
 
     if (json['notes'] != null) {
-      todo.notes = List<String>.from(json['notes']);
+      todo.notes = List<String>.from(json['notes'] as Iterable<dynamic>);
     }
 
     return todo;
