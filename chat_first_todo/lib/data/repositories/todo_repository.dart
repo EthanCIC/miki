@@ -19,7 +19,7 @@ class Result<T> {
   /// 映射結果到另一種類型
   Result<R> map<R>(R Function(T data) mapper) {
     if (isSuccess && data != null) {
-      return Result.success(mapper(data));
+      return Result.success(mapper(data as T));
     }
     return Result._(error: error, isSuccess: false);
   }
