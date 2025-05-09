@@ -1,7 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:miki/data/services/isar_service.dart';
 import 'package:miki/data/models/todo.dart';
+import 'package:mockito/annotations.dart';
 
+// 為 IsarService 生成 Mock
+@GenerateMocks([IsarService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
