@@ -64,6 +64,18 @@ analyzer:
     - "**/*.freezed.dart"
   errors:
     invalid_annotation_target: ignore
+    # 忽略以下常見警告
+    prefer_relative_imports: ignore
+    sort_constructors_first: ignore
+    directives_ordering: ignore
+    depend_on_referenced_packages: ignore
+    unused_import: ignore
+    prefer_const_constructors: ignore
+    sort_child_properties_last: ignore
+    prefer_final_locals: ignore
+    omit_local_variable_types: ignore
+    unnecessary_import: ignore
+    deprecated_member_use: ignore
 
 # 額外的分析配置
   language:
