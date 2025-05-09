@@ -7,6 +7,16 @@ alwaysApply: false
 
 本文檔描述了專案中 Flutter 測試的組織方式、規範和最佳實踐。
 
+## 測試的必要性
+
+- **每項任務都必須包含測試**：我們的開發流程要求所有實現的功能和組件都必須有對應的測試。
+- **測試是完成檢查清單的一部分**：在將任務標記為完成前，必須確保有足夠的測試覆蓋率。
+- **類型匹配**：測試應該與被測試對象的性質相匹配：
+  - 數據模型實現需要單元測試
+  - 服務/儲存庫需要單元測試和集成測試
+  - UI 組件需要 Widget 測試
+  - 跨頁面功能需要整合測試
+
 ## 測試類型與目錄結構
 
 測試文件按照類型組織到不同的目錄中：
@@ -15,6 +25,7 @@ alwaysApply: false
 test/
 ├── unit/               # 單元測試，測試單個函數或類
 │   ├── models/         # 數據模型測試
+│   ├── services/       # 服務類測試
 │   └── utils/          # 工具函數測試
 ├── widget/             # 小部件測試，測試 UI 元件
 ├── integration/        # 整合測試，測試整個應用流程
@@ -26,190 +37,133 @@ test/
 - **目的**：測試單個函數、方法或類的功能
 - **命名規範**：`<被測試類>_test.dart` (如 `todo_test.dart`)
 - **執行命令**：`flutter test test/unit/`
-
-### 單元測試範例
+- **最低要求**：
+  - 所有數據模型必須有對應的模型測試
+  - 所有服務類必須有單元測試
+  - 測試應涵蓋正常流程和異常處理
+  - 測試需包含 CRUD 操作（適用時）
+  - 包括邊界條件測試
+  - 包括空值和無效輸入測試
 
 ```dart
-import 'package:flutter_test/flutter_test.dart';
-import 'package:chat_first_todo/data/models/todo.dart';
-
-void main() {
-  group('Todo Model', () {
-    test('should create with correct defaults', () {
-      final todo = Todo(title: '測試');
-      expect(todo.title, '測試');
-      expect(todo.status, TodoStatus.pending);
-    });
-    
-    test('should complete correctly', () {
-      final todo = Todo(title: '測試');
-      todo.complete();
-      expect(todo.status, TodoStatus.completed);
-      expect(todo.completedAt, isNotNull);
-    });
-  });
-}
+// 單元測試示例
+test('Todo model should be correctly created', () {
+  final todo = Todo(
+    title: '測試待辦事項', 
+    description: '測試描述'
+  );
+  
+  expect(todo.title, '測試待辦事項');
+  expect(todo.status, TodoStatus.pending);
+  expect(todo.createdAt, isNotNull);
+});
 ```
 
-## 小部件測試 (Widget Tests)
+## Widget 測試 (Widget Tests)
 
-- **目的**：測試 UI 元件渲染和互動功能
-- **命名規範**：`<小部件名>_test.dart` (如 `home_screen_test.dart`)
+- **目的**：測試 UI 組件渲染和交互
+- **命名規範**：`<被測試組件>_test.dart` (如 `todo_item_test.dart`)
 - **執行命令**：`flutter test test/widget/`
-
-### 小部件測試範例
+- **最低要求**：
+  - 所有自定義 Widget 需有對應測試
+  - 測試 Widget 的渲染、樣式和佈局
+  - 測試用戶交互（如按鈕點擊）
+  - 測試 Widget 狀態變化
+  - 測試不同配置下的 Widget 行為
 
 ```dart
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:chat_first_todo/ui/screens/todo_screen.dart';
-
-void main() {
-  testWidgets('TodoScreen should display items', (WidgetTester tester) async {
-    // 構建測試部件樹
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: MaterialApp(home: TodoScreen()),
-      ),
-    );
-    
-    // 等待動畫完成
-    await tester.pumpAndSettle();
-    
-    // 檢查是否有特定文本
-    expect(find.text('待辦事項'), findsOneWidget);
-    
-    // 測試互動
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle();
-    
-    // 檢查互動結果
-    expect(find.byType(Dialog), findsOneWidget);
-  });
-}
+// Widget 測試示例
+testWidgets('TodoItem displays correctly', (WidgetTester tester) async {
+  final todo = Todo(title: '測試待辦事項');
+  
+  await tester.pumpWidget(MaterialApp(
+    home: TodoItem(todo: todo)
+  ));
+  
+  expect(find.text('測試待辦事項'), findsOneWidget);
+  expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
+});
 ```
-
-### 常用小部件測試方法
-
-- **尋找元素**：
-  - `find.text('文字內容')`：尋找特定文字
-  - `find.byIcon(Icons.add)`：尋找特定圖標
-  - `find.byType(Button)`：尋找特定類型部件
-  - `find.byKey(Key('my-key'))`：尋找特定 Key 的部件
-
-- **互動模擬**：
-  - `tester.tap(finder)`：點擊
-  - `tester.drag(finder, Offset(dx, dy))`：拖曳
-  - `tester.enterText(finder, 'text')`：輸入文字
-  - `tester.longPress(finder)`：長按
-
-- **等待更新**：
-  - `tester.pump()`：觸發一次畫面更新
-  - `tester.pumpAndSettle()`：等待所有動畫完成
 
 ## 整合測試 (Integration Tests)
 
-- **目的**：測試整個應用程式的功能流程
-- **命名規範**：`<功能>_flow_test.dart` (如 `app_flow_test.dart`)
+- **目的**：測試多個組件協同工作或整個用戶流程
+- **命名規範**：`<測試流程>_test.dart` (如 `todo_creation_flow_test.dart`)
 - **執行命令**：`flutter test test/integration/`
-
-### 整合測試範例
+- **最低要求**：
+  - 測試關鍵的用戶流程（如登錄、註冊）
+  - 測試頁面導航和路由
+  - 測試數據在不同頁面間的傳遞
+  - 包括模擬 API 響應的測試
+  - 測試異步操作和狀態管理
 
 ```dart
-void main() {
-  group('App Flow', () {
-    testWidgets('User can add and complete todos', (WidgetTester tester) async {
-      await tester.pumpWidget(const ProviderScope(child: MyApp()));
-      await tester.pumpAndSettle();
-      
-      // 導航到待辦頁面
-      await tester.tap(find.text('查看待辦事項'));
-      await tester.pumpAndSettle();
-      
-      // 添加新待辦
-      await tester.tap(find.byIcon(Icons.add));
-      await tester.pumpAndSettle();
-      await tester.enterText(find.byType(TextField).first, '測試待辦');
-      await tester.tap(find.text('保存'));
-      await tester.pumpAndSettle();
-      
-      // 驗證待辦已添加
-      expect(find.text('測試待辦'), findsOneWidget);
-      
-      // 完成待辦
-      await tester.tap(find.byType(Checkbox).first);
-      await tester.pumpAndSettle();
-      
-      // 驗證狀態變更
-      final checkbox = tester.widget<Checkbox>(find.byType(Checkbox).first);
-      expect(checkbox.value, isTrue);
-    });
-  });
-}
+// 整合測試示例
+testWidgets('Todo creation flow', (WidgetTester tester) async {
+  await tester.pumpWidget(const MyApp());
+  
+  // 找到添加按鈕並點擊
+  await tester.tap(find.byIcon(Icons.add));
+  await tester.pumpAndSettle();
+  
+  // 填寫表單
+  await tester.enterText(find.byType(TextField).first, '新待辦事項');
+  await tester.tap(find.text('保存'));
+  await tester.pumpAndSettle();
+  
+  // 驗證待辦事項已添加到列表
+  expect(find.text('新待辦事項'), findsOneWidget);
+});
 ```
 
-## 可視化 UI 測試 (有需要時)
+## 測試報告和覆蓋率
 
-如果需要看到測試過程中的 UI 互動，請使用整合測試套件：
-
-1. 添加依賴：
-```yaml
-dev_dependencies:
-  integration_test: ^2.0.0
-```
-
-2. 創建整合測試文件 `integration_test/app_test.dart`
-
-3. 執行命令：
-```bash
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_test.dart
-```
-
-## 測試覆蓋率
-
-使用以下命令獲取測試覆蓋率報告：
-
-```bash
-flutter test --coverage
-genhtml coverage/lcov.info -o coverage/html
-```
-
-在 macOS 上打開覆蓋率報告：
-```bash
-open coverage/html/index.html
-```
+- **覆蓋率要求**：
+  - 數據模型和服務類：>90%
+  - UI 組件：>70%
+  - 總體代碼覆蓋率：>80%
+- **查看覆蓋率報告**：`flutter test --coverage`
+- **生成覆蓋率報告**：`genhtml coverage/lcov.info -o coverage/html`
+- **CI/CD 集成**：所有測試必須在代碼提交和 PR 合併前通過
 
 ## 測試最佳實踐
 
-- **測試獨立性**：每個測試應獨立運行，不依賴其他測試結果
-- **清晰命名**：測試名稱應描述預期行為 (如 `'should create todo with default status'`)
-- **合理分組**：使用 `group()` 將相關測試組織在一起
-- **測試邊界條件**：測試正常情況、邊界情況和錯誤情況
-- **避免過度模擬**：儘量使用真實對象，僅在必要時使用 mock
-- **測試結果而非實現**：測試應驗證行為結果，而非實現細節
+- **準備先行**：測試代碼應遵循 AAA 模式（Arrange-Act-Assert）
+- **隔離測試**：每個測試應該獨立，不依賴於其他測試的結果
+- **模擬外部依賴**：使用 `mockito` 或 `mocktail` 模擬外部服務
+- **清晰命名**：測試命名應清晰描述測試內容和預期結果
+- **測試邊界條件**：測試包括正常使用、邊界條件和異常情況
+- **避免測試實現細節**：測試應關注行為，而非實現細節
+- **測試失敗應提供清晰訊息**：斷言應包含有意義的錯誤信息
 
-## 自動化測試整合
+## 本地 CI 流程
 
-在 CI/CD 管道中添加以下命令來自動執行測試：
+- **提交前檢查**：
+  1. 代碼格式檢查：`dart format --set-exit-if-changed .`
+  2. 代碼分析：`flutter analyze`
+  3. 運行測試：`flutter test`
+- **使用 Git Hook**：項目使用 pre-commit hook 自動執行上述檢查
+- **手動運行 CI**：`scripts/setup_hooks.sh` 設置 Git Hook
+- **略過檢查**：僅在緊急情況下使用 `git commit --no-verify`
 
-```yaml
-- name: Run Flutter tests
-  run: flutter test
-```
+## CI/CD 流程
 
-## 測試驅動開發 (TDD)
+- **GitHub Actions**：所有推送和 PR 都會觸發 CI 流程
+- **步驟**：
+  1. 檢查代碼格式
+  2. 運行代碼分析
+  3. 執行單元測試
+  4. 執行 Widget 測試
+  5. 執行集成測試
+  6. 生成覆蓋率報告
+- **CI 失敗策略**：
+  - 所有測試必須通過才能合併 PR
+  - 代碼覆蓋率不能低於設定閾值
+  - 代碼分析不能有錯誤（警告可接受）
 
-遵循「紅-綠-重構」循環：
-1. 先編寫測試 (紅)
-2. 實現功能直到測試通過 (綠)
-3. 重構代碼保持清潔 (重構)
+## 總結
 
-## 注意事項
-
-- 將敏感數據 (API Key 等) 排除在測試之外
-- 對於複雜小部件測試，使用 `testWidgets` 中的 `pumAndSettle` 或 `pump` 進行刷新
-- 靜態分析也是測試的一部分，定期運行 `flutter analyze`
+測試是我們開發流程的核心組成部分。每個任務在被標記為完成前，必須有足夠的測試覆蓋率和質量。遵循本文檔中的指導方針，可以確保我們的應用程式具有較高的質量和穩定性。
 
 ---
 
